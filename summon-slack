@@ -10,9 +10,11 @@
 # To bind it to the key F10, ensure this is in your $PATH, and set the following
 # in your i3 config file:
 #   bindsym F10 exec --no-startup-id note
-# https://github.com/joepvd/i3-utils
+# https://github.com/joepvd/iiiutils
 
 set -euo pipefail
+
+DEFAULT_SLACK_WS=inbox
 
 main() {
   if (( $# > 0 )); then
@@ -23,7 +25,7 @@ main() {
   if ! window_exists; then
     launch
   elif slack_focused; then
-    move_to_inbox
+    move_to_default
   else
     slack_here
   fi
@@ -50,20 +52,32 @@ slack_focused() {
     '
 }
 
-move_to_inbox() {
-  i3-msg '[class=Slack] move workspace inbox'
+move_to_default() {
+  cmd="[class=Slack] move workspace $DEFAULT_SLACK_WS"
+  if [[ "$DEFAULT_SLACK_WS" == scratchpad ]]; then
+    cmd="[class=Slack] move scratchpad"
+  fi
+  i3-msg "$cmd"
+
 }
 
 slack_here() {
   i3-msg "
-    [class=Slack] move workspace number $(focused_ws_num)
+    [class=Slack] move workspace $(focused_ws)
     [class=Slack] focus
   " 2>/dev/null
 }
 
-focused_ws_num() {
+focused_ws() {
   i3-msg -t get_workspaces |
-    jq --exit-status '.[] | select(.focused == true) | .num'
+    jq --exit-status --raw-output '
+      .[] |
+        select(.focused == true) |
+        if (.num < 0)
+        then .name
+        else "number " + (.num | tostring)
+        end
+    ' 2>/dev/null
 }
 
 halp() {

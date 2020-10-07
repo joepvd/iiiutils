@@ -10,12 +10,12 @@
 # To bind it to the key F4, ensure this is in your $PATH, and set the following
 # in your i3 config file:
 #   bindsym F4 exec --no-startup-id note
-# https://github.com/joepvd/i3-note
+# https://github.com/joepvd/iiiutils
 
 set -euo pipefail
 
 export NOTES_MARK=notes
-NOTES_CMD="alacritty --working-directory ~/vimwiki --command nvim index.wiki"
+NOTES_CMD="alacritty --working-directory ~/vimwiki --title notes --command nvim index.wiki"
 
 main() {
   if (( $# > 0 )); then
@@ -40,7 +40,7 @@ notes_window_exists() {
 }
 
 create_notes() {
-  # Executing as child process, so this can be `wait`--exit-statusd for.
+  # Executing as child process, so this can be `wait`-ed for.
   bash -c mark_new_window &
   i3-msg exec -- $NOTES_CMD
   wait
@@ -48,7 +48,7 @@ create_notes() {
 
 mark_new_window() {
   con_id=$(
-    while IFS= read -r line; do 
+    while IFS= read -r line; do
       jq --exit-status 'select(.change == "new") | .container.id' <<<"$line" &&
         break
     done < <(
@@ -74,15 +74,23 @@ move_to_scratchpad() {
 
 notes_here() {
   i3-msg "
-    [con_mark=$NOTES_MARK] move workspace number $(focused_ws_num)
-    [con_mark=$NOTES_MARK] floating disable
-    [con_mark=$NOTES_MARK] focus
+    [con_mark=$NOTES_MARK]
+      move workspace $(focused_ws),
+      floating disable,
+      focus
   " 2>/dev/null
 }
 
-focused_ws_num() {
+focused_ws() {
   i3-msg -t get_workspaces |
-    jq --exit-status '.[] | select(.focused == true) | .num'
+    jq --exit-status --raw-output '
+      .[] |
+        select(.focused == true) |
+        if (.num < 0)
+        then .name
+        else "number " + (.num | tostring)
+        end
+    ' 2>/dev/null
 }
 
 halp() {
