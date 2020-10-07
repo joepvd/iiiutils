@@ -1,0 +1,92 @@
+#!/usr/bin/env bash
+# note: Script to have a notes app ready in i3wm
+# Usage:
+#   note
+# It will:
+# - start the notes app if there is no window with the "notes" mark available
+# - send the notes app to scratchpad if it is currently focused
+# - bring notes app to current workspace and focus in other cases
+# Configure by setting NOTES_MARK and NOTES_CMD in the script
+# To bind it to the key F4, ensure this is in your $PATH, and set the following
+# in your i3 config file:
+#   bindsym F4 exec --no-startup-id note
+# https://github.com/joepvd/i3-note
+
+set -euo pipefail
+
+export NOTES_MARK=notes
+NOTES_CMD="alacritty --working-directory ~/vimwiki --command nvim index.wiki"
+
+main() {
+  if (( $# > 0 )); then
+    halp
+    exit 0
+  fi
+
+  if ! notes_window_exists; then
+    create_notes
+  elif notes_focused; then
+    move_to_scratchpad
+  else
+    notes_here
+  fi
+}
+
+notes_window_exists() {
+  i3-msg -t get_marks |
+    jq --exit-status --arg mark "$NOTES_MARK" '
+      .[] | select(. == $mark)
+    ' >/dev/null 2>&1
+}
+
+create_notes() {
+  # Executing as child process, so this can be `wait`--exit-statusd for.
+  bash -c mark_new_window &
+  i3-msg exec -- $NOTES_CMD
+  wait
+}
+
+mark_new_window() {
+  con_id=$(
+    while IFS= read -r line; do 
+      jq --exit-status 'select(.change == "new") | .container.id' <<<"$line" &&
+        break
+    done < <(
+      i3-msg -t subscribe -m '["window"]'
+    )
+  )
+  i3-msg "[con_id=$con_id] mark $NOTES_MARK"
+}
+export -f mark_new_window # Export function for child shells
+
+notes_focused() {
+  i3-msg -t get_tree |
+    jq --exit-status --arg mark "$NOTES_MARK" '
+      recurse(.nodes[])
+        | select(.marks[]? == $mark)
+        | select(.focused == true)
+    ' >/dev/null 2>&1
+}
+
+move_to_scratchpad() {
+  i3-msg "[con_mark=$NOTES_MARK] move scratchpad" 2>/dev/null
+}
+
+notes_here() {
+  i3-msg "
+    [con_mark=$NOTES_MARK] move workspace number $(focused_ws_num)
+    [con_mark=$NOTES_MARK] floating disable
+    [con_mark=$NOTES_MARK] focus
+  " 2>/dev/null
+}
+
+focused_ws_num() {
+  i3-msg -t get_workspaces |
+    jq --exit-status '.[] | select(.focused == true) | .num'
+}
+
+halp() {
+  sed -n 's/^# //p' "$0"
+}
+
+main "$@"

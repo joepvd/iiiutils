@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+# summon-slack: Script to plop the slack app in and out of view in i3wm
+# Usage:
+#   summon-slack
+# It will:
+# - start the slack app if there is no window with class "Slack"
+# - send the slack app to default workspace if it is focused
+# - else bring slack app to current workspace and focus
+# Configure by setting NOTES_MARK and NOTES_CMD in the script
+# To bind it to the key F10, ensure this is in your $PATH, and set the following
+# in your i3 config file:
+#   bindsym F10 exec --no-startup-id note
+# https://github.com/joepvd/i3-utils
+
+set -euo pipefail
+
+main() {
+  if (( $# > 0 )); then
+    halp
+    exit 0
+  fi
+
+  if ! window_exists; then
+    launch
+  elif slack_focused; then
+    move_to_inbox
+  else
+    slack_here
+  fi
+}
+
+window_exists() {
+  i3-msg -t get_tree |
+    jq --exit-status '
+      recurse(.nodes[]) |
+        select(.window_properties.class == "Slack")
+    ' >/dev/null 2>&1
+}
+
+launch() {
+  i3-msg exec -- gtk-launch slack 2>/dev/null
+}
+
+slack_focused() {
+  i3-msg -t get_tree |
+    jq --exit-status '
+      recurse(.nodes[])
+        | select(.window_properties.class == "Slack")
+        | select(.focused == true)
+    '
+}
+
+move_to_inbox() {
+  i3-msg '[class=Slack] move workspace inbox'
+}
+
+slack_here() {
+  i3-msg "
+    [class=Slack] move workspace number $(focused_ws_num)
+    [class=Slack] focus
+  " 2>/dev/null
+}
+
+focused_ws_num() {
+  i3-msg -t get_workspaces |
+    jq --exit-status '.[] | select(.focused == true) | .num'
+}
+
+halp() {
+  sed -n 's/^# //p' "$0"
+}
+
+main "$@"
