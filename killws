@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+# Kill all windows on a workspace.
+# Exceptions can be hard coded in the script.
+
+set -euo pipefail
+
+main() {
+  focused_workspace |
+    leaves |
+    filter |
+    kill_containers
+}
+
+focused_workspace() {
+  # Ask i3 what the con_id of the currently focused workspace is.
+  i3-msg -t get_workspaces |
+    jq '.[] | select(.focused == true) | .id' 2>/dev/null
+}
+
+leaves() {
+  # Expects a single con_id on stdin, typically a workspace
+  # Outputs a flat array of leave nodes of that con_id.
+  shopt -s lastpipe
+  read -r ws
+  shopt -u lastpipe
+
+  i3-msg -t get_tree |
+    jq --arg ws "$ws" '[
+      recurse(.nodes[])
+      | select(.id | tostring == $ws)
+      | recurse(.nodes[])
+      | select(.nodes | length == 0)
+    ]' 2>/dev/null
+}
+
+filter() {
+  # Expects a flat array of container objects on stdin
+  # Outputs a filtered array of container objects on stdout
+  jq '[
+    .[]
+    | select(.window_properties.class != "Slack")
+    | select(.window_properties.class != "Mousepad")
+    | select(.window_properties.class != "Alacritty")
+  ]' 2>/dev/null
+}
+
+kill_containers() {
+  # Input: Flat list of containers.
+  # Sends the kill signal to all of them.
+  i3-msg "$(
+    jq --raw-output '.[] | @text "[con_id=\"\(.id)\"] kill;"'
+  )" 2>/dev/null
+}
+
+main "$@"

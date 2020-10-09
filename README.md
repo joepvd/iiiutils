@@ -43,3 +43,12 @@ Set the following in your i3 config file:
 ```
 bindsym F10 exec --no-startup-id summon-slack
 ```
+
+## killws
+Kill all windows on the currently focused workspace. With exceptions, as hard
+coded for now.
+
+Bind as `MOD`+`SHIFT`+`Backspace`:
+```
+bindsym $mod+Shift+BackSpace exec killws
+```
