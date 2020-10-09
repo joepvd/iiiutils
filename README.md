@@ -1,5 +1,5 @@
 # iiiutils
-Some utils for convenient desktop computing
+Some utils for convenient desktop computing.
 
 ## note: Script to have a notes app ready in i3wm
 
@@ -13,19 +13,14 @@ It will:
 $ note
 ```
 
-### Installation
-Copy or symlink `note` to your `$PATH`.
-
+### Configuration
 Set the following in your i3 config file:
 ```
 bindsym F4 exec --no-startup-id note
 ```
-
-### Configuration
 Configure by setting `NOTES_MARK` and `NOTES_CMD` in the script
 
 ## summon-slack: Summon the slack app
-
 It will:
 - start slack if it is off
 - if it is focused, send the app to workspace `inbox`
@@ -36,9 +31,7 @@ It will:
 $ summon-slack
 ```
 
-### Installation
-Copy or symlink `summon-slack` into `$PATH`.
-
+### Configuration
 Set the following in your i3 config file:
 ```
 bindsym F10 exec --no-startup-id summon-slack
@@ -52,3 +45,12 @@ Bind as `MOD`+`SHIFT`+`Backspace`:
 ```
 bindsym $mod+Shift+BackSpace exec killws
 ```
+
+## Installation
+Put the standalone scripts in `$PATH`, or use the `Makefile` after cloning the
+repository to set up symlinking. `make install` and `make uninstall` are the
+available actions.
+
+Environment variables `make` listens to:
+`TARGETS`: default `killws note summon-slack`
+`INSTALL_DIR`: defauly `~/bin`
