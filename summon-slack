@@ -48,7 +48,7 @@ slack_focused() {
     jq --exit-status '
       recurse(.nodes[])
         | select(.window_properties.class == "Slack")
-        | select(.focused == true)
+        | select(.focused)
     '
 }
 
@@ -71,11 +71,11 @@ slack_here() {
 focused_ws() {
   i3-msg -t get_workspaces |
     jq --exit-status --raw-output '
-      .[] |
-        select(.focused == true) |
-        if (.num < 0)
+      .[]
+      | select(.focused)
+      | if (.num < 0)
         then .name
-        else "number " + (.num | tostring)
+        else @text "number \(.num)"
         end
     ' 2>/dev/null
 }

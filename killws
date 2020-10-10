@@ -14,7 +14,7 @@ main() {
 focused_workspace() {
   # Ask i3 what the con_id of the currently focused workspace is.
   i3-msg -t get_workspaces |
-    jq '.[] | select(.focused == true) | .id' 2>/dev/null
+    jq '.[] | select(.focused) | .id' 2>/dev/null
 }
 
 leaves() {

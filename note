@@ -64,7 +64,7 @@ notes_focused() {
     jq --exit-status --arg mark "$NOTES_MARK" '
       recurse(.nodes[])
         | select(.marks[]? == $mark)
-        | select(.focused == true)
+        | select(.focused)
     ' >/dev/null 2>&1
 }
 
