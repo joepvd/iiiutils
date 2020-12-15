@@ -41,6 +41,7 @@ filter() {
     | select(.window_properties.class != "Slack")
     | select(.window_properties.class != "Mousepad")
     | select(.window_properties.class != "Alacritty")
+    | select(.window_properties.class != "Thunderbird")
   ]' 2>/dev/null
 }
 

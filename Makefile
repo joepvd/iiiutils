@@ -1,4 +1,4 @@
-TARGETS ?= killws note summon-slack
+TARGETS ?= $(shell find . -maxdepth 1 -executable -type f  -printf '%P ')
 INSTALL_DIR ?= ~/bin
 
 INSTALL_TARGETS = $(addprefix install-,$(TARGETS))
