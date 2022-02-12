@@ -15,7 +15,8 @@
 set -euo pipefail
 
 export NOTES_MARK=notes
-NOTES_CMD="alacritty --working-directory ~/vimwiki --title notes --command nvim index.wiki"
+
+NOTES_CMD="emacs --chdir ~/org redhat.org"
 
 main() {
   if (( $# > 0 )); then
