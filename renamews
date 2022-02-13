@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+main() {
+  num="$(focused_workspace_number)"
+  new_name="$(ask)"
+  (( num > 0 )) && new_name="$num: $new_name"
+  printf "i3-msg 'rename workspace to \"%s\"'" "$new_name" | sh
+}
+
+ask() {
+  zenity --list \
+    --text='this is text' \
+    --editable \
+    --column name \
+    "$(focused_workspace_name)" \
+    "$(focused_window_name)"
+}
+
+
+focused_workspace_number() {
+  i3-msg -t get_workspaces |
+  jq --exit-status --raw-output '
+    .[]
+      | select(.focused)
+      | .num
+  ' 2>/dev/null
+}
+
+focused_workspace_name() {
+  i3-msg -t get_workspaces |
+    jq --exit-status --raw-output '
+      .[]
+        | select(.focused)
+        | @text "^\(.num): " as $prefix
+        | .name
+        | sub($prefix; "")
+    ' 2>/dev/null |
+    sed \
+      -e 's/^  *//' \
+      -e 's/ - qutebrowser$//' \
+      -e 's/ - Red Hat Issue Tracker //' \
+      -e 's/build » //' \
+      -e 's/ Console [Jenkins] //'
+}
+
+focused_window_name() {
+  i3-msg -t get_tree |
+    jq --exit-status --raw-output '
+      recurse(.nodes[])
+        | select(.focused)
+        | .name
+    '
+}
+
+main "$@"
