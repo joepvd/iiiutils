@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+
+declare -A ws
+. <(
+  i3-msg -t get_workspaces |
+    jq -r '
+      .[]
+      | {
+          name: .name,
+          cmd: ("workspace " + if (.num < 0) then .name else "number \(.num)" end)
+        }
+      | @text "ws[\"\(.name)\"]=\"\(.cmd)\""
+    '
+)
+
+selection="$(printf "%s\n" "${!ws[@]}"| rofi -dmenu)"
+
+i3-msg ${ws[$selection]}
